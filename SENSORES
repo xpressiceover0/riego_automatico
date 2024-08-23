@@ -1,0 +1,245 @@
+#include<DHT.h>
+#define DHTPIN 2
+#define DHTTYPE DHT22
+
+DHT dht(DHTPIN, DHTTYPE);
+int PIN_OUT_1 = 13, PIN_OUT_2 = 12;
+float temp, hum;
+
+void setup(){
+  pinMode(PIN_OUT_1, OUTPUT);
+  pinMode(PIN_OUT_2, OUTPUT);
+  Serial.begin(9600);
+  dht.begin();
+}
+
+void loop(){   
+  Serial.println(dht.readTemperature());
+  Serial.println(dht.readHumidity());
+  
+  
+  saludar(5);
+  
+  temp = dht.readTemperature();
+  hum =  dht.readHumidity();
+
+  if(hum > 20) {
+    digitalWrite(PIN_OUT_2,HIGH);
+  }
+  else{
+    digitalWrite(PIN_OUT_2,LOW);
+  }
+
+  if(temp > 50.0 || temp < 5.0) {
+    digitalWrite(PIN_OUT_1,HIGH);
+  }
+  else{
+    digitalWrite(PIN_OUT_1,LOW);
+  }
+}
+
+void saludar(int numero){
+  Serial.println("hola a todos");
+  Serial.println(numero);
+
+  delay(2000);            //Recordad que solo lee una vez por segundo
+}
+
+/*
+//SENSOR ALARMA ACTUADOR 
+#include <EEPROM.h>
+#include <DHT.h>
+#include <Servo.h>
+#include <math.h>
+
+int servopin = 11, dhtpin = 12, led = 13;
+float temp_lim, hum_lim, temp, hum ;
+
+DHT dht(dhtpin,DHT22);
+Servo servo1;
+
+
+void setup() {
+  // iniciamos comunicacion serial por usb
+  Serial.begin(9600);
+  
+  servo1.attach(servopin);
+  pinMode(dhtpin, INPUT);
+  pinMode(led, OUTPUT);
+  dht.begin();
+  
+  temp_lim = EEPROM.get(0, temp_lim);
+  if(isnan(temp_lim)){
+    Serial.println("Temp limite: ");
+    while(!Serial.available()){
+      delay(1000);  
+    }
+    temp_lim = Serial.parseFloat();
+    
+    EEPROM.put(0, temp_lim);
+  }
+
+  hum_lim = EEPROM.get(4, hum_lim);
+  if(isnan(hum_lim)){
+    while(Serial.read()!= '\n' && Serial.available()>0){
+      delay(100);
+    }
+    Serial.println("Hum limite: ");
+    while(!Serial.available()){
+      delay(1000);  
+    }
+    hum_lim = Serial.parseFloat();
+    
+    EEPROM.put(4, hum_lim);
+  }
+  Serial.println(temp_lim);
+  Serial.println(hum_lim);
+}
+
+void loop() {
+
+  temp = dht.readTemperature();
+  hum = dht.readHumidity();
+
+  if(temp > temp_lim || hum > hum_lim){
+    digitalWrite(led, HIGH);
+  }
+  else{
+    digitalWrite(led, LOW);
+  }
+  delay(1000);
+}
+*/
+
+// servo control alarma led dht
+/*
+//SENSOR ALARMA ACTUADOR 
+#include <EEPROM.h>
+#include <DHT.h>
+#include <Servo.h>
+#include <math.h>
+
+int servopin = 11, led_pin = 12, dhtpin = 13;
+float temp_lim, hum_lim, temp, hum;
+float servoinf, servosup;
+
+// ######################################################### INIT OBJETOS
+
+Servo servo1;
+DHT dht(dhtpin, DHT22);
+
+
+// ############################################################ SET DHT LIMITS
+// setear en eeprom dht limites de temperatura y humedad para prender el led
+void setDhtLimits(int eeprom_temp = 0, int eeprom_hum = 4){
+  temp_lim = EEPROM.get(eeprom_temp, temp_lim);
+  if(isnan(temp_lim)){
+    while(Serial.read()!= '\n' && Serial.available()>0){
+      delay(100);
+    }
+
+    Serial.println("Temp limite: ");
+    while(!Serial.available()){
+      delay(1000);  
+    }
+    temp_lim = Serial.parseFloat();
+    EEPROM.put(eeprom_temp, temp_lim);
+    Serial.println(temp_lim);
+  }
+
+  hum_lim = EEPROM.get(eeprom_hum, hum_lim);
+  if(isnan(hum_lim)){
+    
+    while(Serial.read()!= '\n' && Serial.available()>0){
+      delay(100);
+    }
+    
+    Serial.println("Hum limite: ");
+    while(!Serial.available()){
+      delay(1000);  
+    }
+
+    hum_lim = Serial.parseFloat();
+    EEPROM.put(eeprom_hum, hum_lim);
+    Serial.println(hum_lim);
+  }
+}
+
+void setServoLimits(int eeprom_servoinf = 8, int eeprom_servosup = 12){
+  servoinf = EEPROM.get(eeprom_servoinf, servoinf);
+  if(isnan(servoinf)){
+    while(Serial.read()!= '\n' && Serial.available()>0){
+      delay(100);
+    }
+
+    Serial.println("Servo limite inf: ");
+    while(!Serial.available()){
+      delay(1000);  
+    }
+    servoinf = Serial.parseFloat();
+    EEPROM.put(eeprom_servoinf, servoinf);
+    Serial.println(servoinf);
+  }
+
+  servosup = EEPROM.get(eeprom_servosup, servosup);
+  if(isnan(servosup)){
+    
+    while(Serial.read()!= '\n' && Serial.available()>0){
+      delay(100);
+    }
+    
+    Serial.println("Servo limite sup: ");
+    while(!Serial.available()){
+      delay(1000);  
+    }
+
+    servosup = Serial.parseFloat();
+    EEPROM.put(eeprom_servosup, servosup);
+    Serial.println(servosup);
+  }
+}
+
+// ############################################################ SENSAR DHT
+int sensarDHT(){
+  temp = dht.readTemperature();
+  hum = dht.readHumidity();
+
+  if(temp > temp_lim || hum > hum_lim){
+    return 1;
+  }
+  else{
+    return 0;
+  }
+}
+
+// ############################################################ SENSAR DHT
+void activarActuador(float x, float alfa = 0, float beta = 180){
+  if(x <= servoinf){
+    servo1.write(alfa);
+  }
+  else if(x >= servosup){
+    servo1.write(beta);
+  }
+  else{
+    servo1.write(map(x, servoinf, servosup, alfa, beta));
+  }
+}
+
+// ######################################################### SETUP
+void setup() {
+  // iniciamos comunicacion serial por usb
+  Serial.begin(9600);
+  pinMode(led_pin, OUTPUT);
+  servo1.attach(servopin);
+  setDhtLimits();
+  setServoLimits();
+  dht.begin();
+}
+
+void loop() {
+
+  digitalWrite(led_pin, sensarDHT());
+  activarActuador(temp);
+  delay(500);
+}
+*/
